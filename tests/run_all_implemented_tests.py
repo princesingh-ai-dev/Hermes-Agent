@@ -127,6 +127,15 @@ async def run_all():
         print("Hybrid Memory Store Tests: PASSED 🎉")
     except Exception as e:
         print(f"❌ Hybrid Memory Store Test Failed: {e}")
+
+    # 15. JARVIS Phase 1 Security & Soul Hot-switching Upgrades
+    print("\n--- Running JARVIS Phase 1 Tests ---")
+    try:
+        from tests.test_phase1 import TestPhase1Upgrades
+        run_suite(TestPhase1Upgrades)
+        print("JARVIS Phase 1 Tests: PASSED 🎉")
+    except Exception as e:
+        print(f"❌ JARVIS Phase 1 Test Failed: {e}")
         
     print("==================================================")
     print("✅ RUN COMPLETED ✅")

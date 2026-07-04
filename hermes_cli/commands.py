@@ -133,6 +133,9 @@ COMMAND_REGISTRY: list[CommandDef] = [
                "Configuration", aliases=("codex_runtime",),
                args_hint="[auto|codex_app_server]"),
 
+    CommandDef("soul", "Show or switch the active SOUL personality profile", "Configuration",
+               args_hint="[profile-name]",
+               subcommands=("default", "coding-mentor", "devops-operator", "research-analyst", "security-auditor")),
     CommandDef("personality", "Set a predefined personality", "Configuration",
                args_hint="[name]"),
     CommandDef("statusbar", "Toggle the context/model status bar", "Configuration",

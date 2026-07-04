@@ -1506,6 +1506,37 @@ class CLICommandsMixin:
         else:  # pragma: no cover - defensive (no live input loop)
             print("  /learn needs an active chat session to run.")
 
+    def _handle_soul_command(self, cmd: str):
+        """Handle /soul [profile-name] — list or switch the active SOUL profile."""
+        from hermes.agent.soul_engine import SoulEngine
+        engine = SoulEngine()
+        parts = cmd.strip().split(None, 1)
+        profile_name = parts[1].strip() if len(parts) > 1 else ""
+
+        agent = getattr(self, "agent", None)
+        active_soul = getattr(agent, "active_soul", "default") if agent else "default"
+
+        if not profile_name:
+            profiles = engine.list_profiles()
+            print("\n🎭 Available SOUL profiles:")
+            for p in profiles:
+                active_mark = " (active)" if p == active_soul else ""
+                print(f"  - {p}{active_mark}")
+            print("\nUsage: /soul <profile-name> to switch.")
+            return
+
+        try:
+            profile = engine.load_profile(profile_name)
+            if agent:
+                agent.active_soul = profile.name
+                from agent.system_prompt import invalidate_system_prompt
+                invalidate_system_prompt(agent)
+                print(f"🎭 Switched agent SOUL personality to: '{profile.name}' ({profile.role})")
+            else:
+                print(f"🎭 SOUL profile '{profile.name}' loaded (no active agent session to apply to).")
+        except Exception as e:
+            print(f"❌ Failed to load SOUL profile '{profile_name}': {e}")
+
     def _handle_correct_command(self, cmd: str):
         """Handle /correct [description] — record a user correction for RL optimization."""
         import json

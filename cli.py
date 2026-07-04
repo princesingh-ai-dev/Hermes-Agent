@@ -8318,6 +8318,8 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
             self._handle_learn_command(cmd_original)
         elif canonical == "correct":
             self._handle_correct_command(cmd_original)
+        elif canonical == "soul":
+            self._handle_soul_command(cmd_original)
         elif canonical == "memory":
             self._handle_memory_command(cmd_original)
         elif canonical == "platforms":

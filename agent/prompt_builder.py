@@ -13,7 +13,7 @@ from collections import OrderedDict
 from pathlib import Path
 
 from hermes_constants import get_hermes_home, get_skills_dir, is_wsl
-from typing import Optional
+from typing import Optional, Any
 
 from agent.runtime_cwd import resolve_agent_cwd
 from agent.skill_utils import (
@@ -1754,13 +1754,22 @@ def _truncate_content(
     return head + marker + tail
 
 
-def load_soul_md(context_length: Optional[int] = None) -> Optional[str]:
+def load_soul_md(context_length: Optional[int] = None, agent: Any = None) -> Optional[str]:
     """Load SOUL.md from HERMES_HOME and return its content, or None.
 
     Used as the agent identity (slot #1 in the system prompt).  When this
     returns content, ``build_context_files_prompt`` should be called with
     ``skip_soul=True`` so SOUL.md isn't injected twice.
     """
+    active_soul = getattr(agent, "active_soul", "default") if agent else "default"
+    if active_soul != "default":
+        try:
+            from hermes.agent.soul_engine import SoulEngine
+            engine = SoulEngine()
+            return engine.render_soul_prompt(active_soul)
+        except Exception as e:
+            logger.debug("Could not render SOUL profile prompt: %s", e)
+
     try:
         from hermes_cli.config import ensure_hermes_home
         ensure_hermes_home()
@@ -1769,7 +1778,12 @@ def load_soul_md(context_length: Optional[int] = None) -> Optional[str]:
 
     soul_path = get_hermes_home() / "SOUL.md"
     if not soul_path.exists():
-        return None
+        try:
+            from hermes.agent.soul_engine import SoulEngine
+            engine = SoulEngine()
+            return engine.render_soul_prompt("default")
+        except Exception:
+            return None
     try:
         content = soul_path.read_text(encoding="utf-8").strip()
         if not content:

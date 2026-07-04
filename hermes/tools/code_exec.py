@@ -70,7 +70,17 @@ class SandboxProxyServer:
         if ":" in dest_host:
             dest_host = dest_host.split(":")[0]
             
-        for domain in WHITELIST_DOMAINS:
+        allowed_domains = WHITELIST_DOMAINS
+        try:
+            from hermes_cli.config import load_config_readonly, cfg_get
+            cfg = load_config_readonly()
+            user_domains = cfg_get(cfg, "sandbox", "whitelist_domains", default=None)
+            if user_domains and isinstance(user_domains, list):
+                allowed_domains = set(user_domains)
+        except Exception:
+            pass
+            
+        for domain in allowed_domains:
             if dest_host == domain or dest_host.endswith("." + domain):
                 return True
         return False
@@ -332,9 +342,10 @@ def _is_docker_available() -> bool:
 def _execute_in_local_fallback(code: str, timeout: int) -> dict:
     """Execute Python code locally but with environment variables scrubbed for safety."""
     safe_env = {}
-    for k in ["PATH", "SYSTEMROOT", "TEMP", "TMP", "COMSPEC"]:
-        if k in os.environ:
-            safe_env[k] = os.environ[k]
+    safe_keys = {"PATH", "SYSTEMROOT", "TEMP", "TMP", "COMSPEC"}
+    for k, v in os.environ.items():
+        if k.upper() in safe_keys:
+            safe_env[k] = v
             
     with tempfile.NamedTemporaryFile(suffix=".py", delete=False, mode="w", encoding="utf-8") as f:
         f.write(code)
