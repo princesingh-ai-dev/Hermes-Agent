@@ -136,6 +136,15 @@ async def run_all():
         print("JARVIS Phase 1 Tests: PASSED 🎉")
     except Exception as e:
         print(f"❌ JARVIS Phase 1 Test Failed: {e}")
+
+    # 16. JARVIS Phase 2 SQLite WAL Temporal Memory Integration
+    print("\n--- Running JARVIS Phase 2 Tests ---")
+    try:
+        from tests.test_phase2 import TestPhase2MemoryIntegration
+        run_suite(TestPhase2MemoryIntegration)
+        print("JARVIS Phase 2 Tests: PASSED 🎉")
+    except Exception as e:
+        print(f"❌ JARVIS Phase 2 Test Failed: {e}")
         
     print("==================================================")
     print("✅ RUN COMPLETED ✅")

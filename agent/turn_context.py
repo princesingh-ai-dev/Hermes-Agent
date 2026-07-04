@@ -143,6 +143,17 @@ def build_turn_context(
     # Guard stdio against OSError from broken pipes (systemd/headless/daemon).
     install_safe_stdio()
 
+    # Record user message in Hybrid Cognitive Memory
+    try:
+        import time
+        from hermes.memory.hybrid_store import HybridMemoryManager
+        memory_mgr = HybridMemoryManager()
+        # Key memory on session_id and simple timestamp suffix to keep it unique
+        m_key = f"{agent.session_id}_{int(time.time())}"
+        memory_mgr.record_memory_access(m_key, user_message)
+    except Exception:
+        pass
+
     # NOTE: the DB session row is created later, AFTER the system prompt is
     # restored/built (see _ensure_db_session() below the system-prompt block).
     # Creating it here — before _cached_system_prompt is populated — inserts a
