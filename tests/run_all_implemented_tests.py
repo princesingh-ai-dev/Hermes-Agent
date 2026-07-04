@@ -118,6 +118,15 @@ async def run_all():
         print("SOUL Engine Tests: PASSED 🎉")
     except Exception as e:
         print(f"❌ SOUL Engine Test Failed: {e}")
+
+    # 14. Hybrid Cognitive Memory Store
+    print("\n--- Running Hybrid Memory Store Tests ---")
+    try:
+        from tests.test_hybrid_store import TestHybridMemoryStore
+        run_suite(TestHybridMemoryStore)
+        print("Hybrid Memory Store Tests: PASSED 🎉")
+    except Exception as e:
+        print(f"❌ Hybrid Memory Store Test Failed: {e}")
         
     print("==================================================")
     print("✅ RUN COMPLETED ✅")
