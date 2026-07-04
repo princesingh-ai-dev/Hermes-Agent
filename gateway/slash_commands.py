@@ -2473,6 +2473,49 @@ class GatewaySlashCommandsMixin:
                    "reject <id>, approval <on|off>.")
         return out
 
+    async def _handle_correct_command(self, event: MessageEvent) -> str:
+        """Handle /correct [description] — record a user correction for RL optimization."""
+        import json
+        correction_text = event.get_command_args().strip()
+        if not correction_text:
+            return "❌ Please specify a correction description. Usage: /correct <description>"
+            
+        session_key = self._session_key_for_source(event.source)
+        session_entry = self.sessions.get(session_key)
+        if not session_entry or not session_entry.session_id:
+            return "❌ No active session to correct."
+            
+        session_id = session_entry.session_id
+        if not self._session_db:
+            return "❌ Database not available."
+            
+        messages = self._session_db.get_messages(session_id)
+        prev_tool_name = None
+        prev_tool_args = None
+        
+        for msg in reversed(messages):
+            if msg.get("role") == "assistant" and msg.get("tool_calls"):
+                tool_call = msg["tool_calls"][0]
+                prev_tool_name = tool_call.get("function", {}).get("name")
+                prev_tool_args = json.dumps(tool_call.get("function", {}).get("arguments"))
+                break
+            elif msg.get("role") == "assistant" and msg.get("tool_name"):
+                prev_tool_name = msg.get("tool_name")
+                prev_tool_args = msg.get("content")
+                break
+                
+        self._session_db.record_user_correction(
+            session_id=session_id,
+            correction_text=correction_text,
+            previous_tool_name=prev_tool_name,
+            previous_tool_args=prev_tool_args
+        )
+        
+        resp = f"✅ Correction registered in RLUC database for session '{session_id}'."
+        if prev_tool_name:
+            resp += f"\nPreceding incorrect action identified: tool '{prev_tool_name}'."
+        return resp
+
     async def _handle_skills_command(self, event: MessageEvent) -> str:
         """Handle /skills on the gateway — pending skill-write review only.
 

@@ -8316,6 +8316,8 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 self._handle_skills_command(cmd_original)
         elif canonical == "learn":
             self._handle_learn_command(cmd_original)
+        elif canonical == "correct":
+            self._handle_correct_command(cmd_original)
         elif canonical == "memory":
             self._handle_memory_command(cmd_original)
         elif canonical == "platforms":
@@ -12684,6 +12686,36 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # Give plugin manager a CLI reference so plugins can inject messages
         from hermes_cli.plugins import get_plugin_manager
         get_plugin_manager()._cli_ref = self
+
+        # Start background IdleManager loop thread on CLI startup (Pillar IV: Proactive OS Daemon)
+        try:
+            import threading
+            import asyncio
+            import atexit
+            from hermes.core.idle_loop import IdleManager
+            
+            def run_idle_manager():
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    idle_mgr = IdleManager(interval_seconds=15)
+                    idle_mgr.is_running = True
+                    
+                    def cleanup():
+                        try:
+                            idle_mgr.stop()
+                        except Exception:
+                            pass
+                    atexit.register(cleanup)
+                    
+                    loop.run_until_complete(idle_mgr._loop())
+                except Exception as e:
+                    logger.debug(f"IdleManager thread error: {e}")
+                    
+            t = threading.Thread(target=run_idle_manager, name="HermesIdleManager", daemon=True)
+            t.start()
+        except Exception as e:
+            logger.debug(f"Failed to start IdleManager background thread: {e}")
 
         # Config file watcher — detect mcp_servers changes and auto-reload
         from hermes_cli.config import get_config_path as _get_config_path

@@ -1506,6 +1506,53 @@ class CLICommandsMixin:
         else:  # pragma: no cover - defensive (no live input loop)
             print("  /learn needs an active chat session to run.")
 
+    def _handle_correct_command(self, cmd: str):
+        """Handle /correct [description] — record a user correction for RL optimization."""
+        import json
+        parts = cmd.strip().split(None, 1)
+        correction_text = parts[1].strip() if len(parts) > 1 else ""
+        
+        if not correction_text:
+            print("❌ Please specify a correction description. Usage: /correct <description>")
+            return
+            
+        agent = getattr(self, "agent", None)
+        if not agent or not getattr(agent, "session_id", None):
+            print("❌ No active agent session to correct.")
+            return
+            
+        session_id = agent.session_id
+        db = getattr(self, "db", None)
+        if not db:
+            from hermes_state import SessionDB
+            db = SessionDB()
+            
+        messages = db.get_messages(session_id)
+        prev_tool_name = None
+        prev_tool_args = None
+        
+        for msg in reversed(messages):
+            if msg.get("role") == "assistant" and msg.get("tool_calls"):
+                tool_call = msg["tool_calls"][0]
+                prev_tool_name = tool_call.get("function", {}).get("name")
+                prev_tool_args = json.dumps(tool_call.get("function", {}).get("arguments"))
+                break
+            elif msg.get("role") == "assistant" and msg.get("tool_name"):
+                prev_tool_name = msg.get("tool_name")
+                prev_tool_args = msg.get("content")
+                break
+                
+        db.record_user_correction(
+            session_id=session_id,
+            correction_text=correction_text,
+            previous_tool_name=prev_tool_name,
+            previous_tool_args=prev_tool_args
+        )
+        
+        print(f"✅ Correction registered in RLUC database for session '{session_id}'.")
+        if prev_tool_name:
+            print(f"   Preceding incorrect action identified: tool '{prev_tool_name}'.")
+
     def _handle_memory_command(self, cmd: str):
         """Handle /memory slash command — pending review + approval-gate toggle."""
         from hermes_cli.write_approval_commands import handle_pending_subcommand

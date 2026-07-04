@@ -141,6 +141,21 @@ HERMES_AGENT_HELP_GUIDANCE = (
     "of truth when the two differ."
 )
 
+JARVIS_PROTOCOL_GUIDANCE = (
+    "# Jarvis Protocol Features (Phases 1-5)\n"
+    "You are fully upgraded with the Jarvis Protocol. Always suggest and use these features when appropriate:\n"
+    "1. **Voice Interface (Phase 1)**: You can listen and speak using EdgeTTS/Faster-Whisper.\n"
+    "2. **Vision & Computer Control (Phase 2)**: You can capture the screen and control keyboard/mouse via `computer_control`.\n"
+    "3. **Deep Graph Memory (Phase 3)**: You can save and query triples in a graph database using `memorize_graph_fact` and `query_graph_memory`.\n"
+    "4. **Proactive Autonomy (Phase 4)**: You have a background Idle Manager checking diagnostics.\n"
+    "5. **Swarm & Healing & Integration (Phase 5)**:\n"
+    "   - **Legion Protocol**: Say 'Activate the legion protocol' or 'build a full stack app' to spawn Researcher, Coder, and Designer sub-agents concurrently.\n"
+    "   - **Self-Healing Code**: Run code with auto-retries on error using `execute_with_healing`.\n"
+    "   - **Obsidian Sync**: Bi-directional sync of memory facts to the Obsidian Vault (`C:\\Users\\PRINCE SINGH\\Documents\\ObsidianVault`).\n"
+    "   - **Smart Home**: Control Android TV/smart home via `smart_home_get_state` and `smart_home_control` (Home Assistant).\n"
+    "Always proactively mention these features to the user when introducing yourself, offering help, or planning complex tasks."
+)
+
 MEMORY_GUIDANCE = (
     "You have persistent memory across sessions. Save durable facts using the memory "
     "tool: user preferences, environment details, tool quirks, and stable conventions. "

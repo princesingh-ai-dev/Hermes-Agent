@@ -677,6 +677,18 @@ CREATE INDEX IF NOT EXISTS idx_sessions_parent ON sessions(parent_session_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_started ON sessions(started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_compression_locks_expires ON compression_locks(expires_at);
+
+CREATE TABLE IF NOT EXISTS user_corrections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL REFERENCES sessions(id),
+    timestamp REAL NOT NULL,
+    correction_text TEXT NOT NULL,
+    previous_tool_name TEXT,
+    previous_tool_args TEXT,
+    corrected_action TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_corrections_session ON user_corrections(session_id);
 """
 
 # Indexes that reference columns added in later schema versions must be
@@ -1460,6 +1472,45 @@ class SessionDB:
         """Create a new session record. Returns the session_id."""
         self._insert_session_row(session_id, source, **kwargs)
         return session_id
+
+    def record_user_correction(self, session_id: str, correction_text: str, 
+                               previous_tool_name: str = None, 
+                               previous_tool_args: str = None, 
+                               corrected_action: str = None) -> None:
+        """Record a user correction to the database."""
+        def _do(conn):
+            conn.execute(
+                "INSERT INTO user_corrections (session_id, timestamp, correction_text, "
+                "previous_tool_name, previous_tool_args, corrected_action) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (session_id, time.time(), correction_text, 
+                 previous_tool_name, previous_tool_args, corrected_action)
+            )
+        self._execute_write(_do)
+
+    def get_user_corrections(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieve user corrections from the database."""
+        cursor = self._conn.cursor()
+        cursor.execute(
+            "SELECT id, session_id, timestamp, correction_text, previous_tool_name, "
+            "previous_tool_args, corrected_action FROM user_corrections "
+            "ORDER BY timestamp DESC LIMIT ?",
+            (limit,)
+        )
+        rows = cursor.fetchall()
+        return [
+            {
+                "id": r["id"],
+                "session_id": r["session_id"],
+                "timestamp": r["timestamp"],
+                "correction_text": r["correction_text"],
+                "previous_tool_name": r["previous_tool_name"],
+                "previous_tool_args": r["previous_tool_args"],
+                "corrected_action": r["corrected_action"]
+            }
+            for r in rows
+        ]
+
     def end_session(self, session_id: str, end_reason: str) -> None:
         """Mark a session as ended.
 
