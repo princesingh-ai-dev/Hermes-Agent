@@ -151,6 +151,10 @@ def build_turn_context(
         # Key memory on session_id and simple timestamp suffix to keep it unique
         m_key = f"{agent.session_id}_{int(time.time())}"
         memory_mgr.record_memory_access(m_key, user_message)
+
+        # Record activity for idle detection
+        from hermes.core.idle_loop import record_activity
+        record_activity()
     except Exception:
         pass
 

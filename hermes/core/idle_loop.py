@@ -7,7 +7,21 @@ import tempfile
 from datetime import datetime
 from hermes.memory.chroma_store import HermesMemory
 
+import time
+
 logger = logging.getLogger("hermes.core.idle")
+
+_LAST_ACTIVITY_TIME = None
+
+def record_activity():
+    global _LAST_ACTIVITY_TIME
+    _LAST_ACTIVITY_TIME = time.time()
+
+def get_last_activity_time():
+    global _LAST_ACTIVITY_TIME
+    if _LAST_ACTIVITY_TIME is None:
+        _LAST_ACTIVITY_TIME = time.time()
+    return _LAST_ACTIVITY_TIME
 
 class IdleManager:
     def __init__(self, interval_seconds: int = 15):
@@ -154,6 +168,15 @@ class IdleManager:
                             imported_pkgs.add(match.group(1))
                             
                     if imported_pkgs:
+                        # Hook HybridMemoryManager to the Proactive Daemon: write relation triples
+                        try:
+                            from hermes.memory.hybrid_store import HybridMemoryManager
+                            memory_mgr = HybridMemoryManager()
+                            for pkg in imported_pkgs:
+                                memory_mgr.add_relation(rel_path, pkg, "imports")
+                        except Exception as e:
+                            logger.debug(f"Failed to write Graph RAG import relation for {rel_path}: {e}")
+
                         guidance_cards = {
                             "dspy": "DSPy guidance: DSPy is a framework for programming—not prompting—language models. Use declarative Signatures (dspy.Signature), Modules (dspy.Predict, dspy.ChainOfThought), and Optimizers for prompt tuning.",
                             "sqlite3": "sqlite3 guidance: Always use WAL mode (Write-Ahead Log) for concurrency. On Windows, explicitly close connections to avoid process locks (WinError 32).",
@@ -265,3 +288,16 @@ class IdleManager:
                                 shutil.rmtree(temp_dir)
         except Exception as e:
             logger.debug(f"Docker container cleanup check skipped: {e}")
+
+        # 4. Idle-Time Memory Pruning Curation Loop
+        try:
+            elapsed_idle = time.time() - get_last_activity_time()
+            if elapsed_idle > 2 * 3600:
+                logger.info(f"[MAINTENANCE] System has been idle for {elapsed_idle/3600:.1f} hours (> 2h). running memory decay pruning curation.")
+                from hermes.memory.hybrid_store import HybridMemoryManager
+                memory_mgr = HybridMemoryManager()
+                memory_mgr.retrieve_active_memories(decay_threshold=0.1)
+                # Reset activity timer to avoid repeating continuously while idle
+                record_activity()
+        except Exception as e:
+            logger.error(f"Error in idle-time memory curation: {e}")
