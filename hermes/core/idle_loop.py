@@ -301,3 +301,12 @@ class IdleManager:
                 record_activity()
         except Exception as e:
             logger.error(f"Error in idle-time memory curation: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Alias for backwards-compatible imports used in Phase 1 integration code.
+# Any module that imports `from hermes.core.idle_loop import HermesIdleManager`
+# will get the same class as IdleManager.
+# ---------------------------------------------------------------------------
+HermesIdleManager = IdleManager
+

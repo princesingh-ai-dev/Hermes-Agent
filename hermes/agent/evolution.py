@@ -148,3 +148,12 @@ class GEPAEvolution:
             "SELECT query, response, tools_used FROM sessions WHERE success = 0 ORDER BY timestamp DESC LIMIT 10"
         ).fetchall()
         return [str(r) for r in results]
+
+
+# ---------------------------------------------------------------------------
+# Alias for backwards-compatible imports used in Phase 3 integration code.
+# Any module that imports `from hermes.agent.evolution import EvolutionEngine`
+# will get the same class as GEPAEvolution.
+# ---------------------------------------------------------------------------
+EvolutionEngine = GEPAEvolution
+
